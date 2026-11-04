@@ -1,0 +1,73 @@
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: agence-immobiliere-db
+    environment:
+      POSTGRES_USER: agence_admin
+      POSTGRES_PASSWORD: agence_password
+      POSTGRES_DB: agence_immobiliere
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agence_admin -d agence_immobiliere"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # announcements-service:
+  #   build: ./announcements-service
+  #   container_name: announcements-service
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+  #     SPRING_DATASOURCE_USERNAME: agence_admin
+  #     SPRING_DATASOURCE_PASSWORD: agence_password
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+  # offers-service:
+  #   build: ./offers-service
+  #   container_name: offers-service
+  #   ports:
+  #     - "8082:8082"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+  #     SPRING_DATASOURCE_USERNAME: agence_admin
+  #     SPRING_DATASOURCE_PASSWORD: agence_password
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+  # favourites-service:
+  #   build: ./favourites-service
+  #   container_name: favourites-service
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+  #     SPRING_DATASOURCE_USERNAME: agence_admin
+  #     SPRING_DATASOURCE_PASSWORD: agence_password
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+  # visits-service:
+  #   build: ./visits-service
+  #   container_name: visits-service
+  #   ports:
+  #     - "8084:8084"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+  #     SPRING_DATASOURCE_USERNAME: agence_admin
+  #     SPRING_DATASOURCE_PASSWORD: agence_password
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+volumes:
+  postgres_data:
