@@ -30,18 +30,18 @@ services:
   #     postgres:
   #       condition: service_healthy
 
-  # offers-service:
-  #   build: ./offers-service
-  #   container_name: offers-service
-  #   ports:
-  #     - "8082:8082"
-  #   environment:
-  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
-  #     SPRING_DATASOURCE_USERNAME: agence_admin
-  #     SPRING_DATASOURCE_PASSWORD: agence_password
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
+  offers-service:
+    build: ./offers-service
+    container_name: offers-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+      SPRING_DATASOURCE_USERNAME: agence_admin
+      SPRING_DATASOURCE_PASSWORD: agence_password
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # favourites-service:
   #   build: ./favourites-service
