@@ -17,18 +17,18 @@ services:
       timeout: 5s
       retries: 5
 
-  # announcements-service:
-  #   build: ./announcements-service
-  #   container_name: announcements-service
-  #   ports:
-  #     - "8081:8081"
-  #   environment:
-  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
-  #     SPRING_DATASOURCE_USERNAME: agence_admin
-  #     SPRING_DATASOURCE_PASSWORD: agence_password
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
+  announcements-service:
+    build: ./announcements-service
+    container_name: announcements-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+      SPRING_DATASOURCE_USERNAME: agence_admin
+      SPRING_DATASOURCE_PASSWORD: agence_password
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # offers-service:
   #   build: ./offers-service
