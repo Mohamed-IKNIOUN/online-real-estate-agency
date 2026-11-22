@@ -1,1 +1,7 @@
-C:\Users\hp\Desktop\agence-immobiliere-WEB-SERVICE\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\AnnouncementsServiceApplication.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\AnnouncementsServiceApplication.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\controller\AnnouncementController.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\entity\Announcement.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\enums\PropertyType.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\enums\TransactionType.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\repository\AnnouncementRepository.java
+C:\Users\hp\Desktop\projects\online-real-estate-agency\announcements-service\src\main\java\com\agenceimmobiliere\announcements_service\service\AnnouncementService.java
