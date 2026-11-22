@@ -1,5 +1,7 @@
 package com.agenceimmobiliere.offers_service.repository;
 
-public class OfferRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface OfferRepository extends JpaRepository{
 
 }
