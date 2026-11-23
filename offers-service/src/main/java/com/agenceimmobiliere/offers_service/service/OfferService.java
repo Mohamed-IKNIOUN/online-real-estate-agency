@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import com.agenceimmobiliere.offers_service.entity.Offer;
 import com.agenceimmobiliere.offers_service.repository.OfferRepository;
 
+import com.agenceimmobiliere.offers_service.dto.CreateOfferRequest;
+import com.agenceimmobiliere.offers_service.dto.UpdateOfferRequest;
+import com.agenceimmobiliere.offers_service.dto.OfferResponse;
+
 @Service
 public class OfferService {
 
@@ -18,22 +22,40 @@ public class OfferService {
     }
 
     // Get all offers
-    public List<Offer> getAllOffers() {
-        return offerRepository.findAll();
+    public List<OfferResponse> getAllOffers() {
+
+        return offerRepository.findAll()
+                .stream()
+                .map(this::toOfferResponse)
+                .toList();
     }
 
     // Get one offer by ID
-    public Optional<Offer> getOfferById(Long id) {
-        return offerRepository.findById(id);
+    public Optional<OfferResponse> getOfferById(Long id) {
+
+        return offerRepository.findById(id)
+                .map(this::toOfferResponse);
     }
 
     // Create a new offer
-    public Offer createOffer(Offer offer) {
-        return offerRepository.save(offer);
+    public OfferResponse createOffer(CreateOfferRequest request) {
+
+        Offer offer = new Offer();
+
+        offer.setMessage(request.getMessage());
+        offer.setProposedAmount(request.getProposedAmount());
+        offer.setAnnouncementId(request.getAnnouncementId());
+        offer.setBuyerId(request.getBuyerId());
+
+        Offer savedOffer = offerRepository.save(offer);
+
+        return toOfferResponse(savedOffer);
     }
 
     // Update an existing offer
-    public Optional<Offer> updateOffer(Long id, Offer updatedOffer) {
+    public Optional<OfferResponse> updateOffer(
+            Long id,
+            UpdateOfferRequest request) {
 
         Optional<Offer> existingOffer = offerRepository.findById(id);
 
@@ -43,12 +65,12 @@ public class OfferService {
 
         Offer offer = existingOffer.get();
 
-        offer.setMessage(updatedOffer.getMessage());
-        offer.setProposedAmount(updatedOffer.getProposedAmount());
-        offer.setAnnouncementId(updatedOffer.getAnnouncementId());
-        offer.setBuyerId(updatedOffer.getBuyerId());
+        offer.setMessage(request.getMessage());
+        offer.setProposedAmount(request.getProposedAmount());
 
-        return Optional.of(offerRepository.save(offer));
+        Offer updatedOffer = offerRepository.save(offer);
+
+        return Optional.of(toOfferResponse(updatedOffer));
     }
 
     // Delete an offer
@@ -63,12 +85,42 @@ public class OfferService {
     }
 
     // Get offers by buyer ID
-    public List<Offer> getOffersByBuyerId(Long buyerId) {
-        return offerRepository.findByBuyerId(buyerId);
+    public List<OfferResponse> getOffersByBuyerId(Long buyerId) {
+
+        return offerRepository.findByBuyerId(buyerId)
+                .stream()
+                .map(this::toOfferResponse)
+                .toList();
     }
 
     // Get offers by announcement ID
-    public List<Offer> getOffersByAnnouncementId(Long announcementId) {
-        return offerRepository.findByAnnouncementId(announcementId);
+    public List<OfferResponse> getOffersByAnnouncementId(Long announcementId) {
+
+        return offerRepository.findByAnnouncementId(announcementId)
+                .stream()
+                .map(this::toOfferResponse)
+                .toList();
     }
+    
+    
+    
+    // Convert Offer entity into OfferResponse DTO
+    private OfferResponse toOfferResponse(Offer offer) {
+
+        return new OfferResponse(
+                offer.getId(),
+                offer.getMessage(),
+                offer.getProposedAmount(),
+                offer.getStatus(),
+                offer.getSubmittedAt(),
+                offer.getAnnouncementId(),
+                offer.getBuyerId()
+        );
+    }
+    
+    
+    
+    
+    
+    
 }

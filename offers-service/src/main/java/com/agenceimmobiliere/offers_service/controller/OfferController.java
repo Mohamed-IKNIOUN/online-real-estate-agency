@@ -6,8 +6,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.agenceimmobiliere.offers_service.entity.Offer;
+//import com.agenceimmobiliere.offers_service.entity.Offer;
 import com.agenceimmobiliere.offers_service.service.OfferService;
+
+import com.agenceimmobiliere.offers_service.dto.CreateOfferRequest;
+import com.agenceimmobiliere.offers_service.dto.UpdateOfferRequest;
+import com.agenceimmobiliere.offers_service.dto.OfferResponse;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/offers")
@@ -21,35 +27,36 @@ public class OfferController {
 
     // GET /api/offers
     @GetMapping
-    public List<Offer> getAllOffers() {
+    public List<OfferResponse> getAllOffers() {
         return offerService.getAllOffers();
     }
 
     // GET /api/offers/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<Offer> getOfferById(@PathVariable Long id) {
+    public ResponseEntity<OfferResponse> getOfferById(@PathVariable Long id) {
 
         return offerService.getOfferById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /api/offers
+ // POST /api/offers
     @PostMapping
-    public ResponseEntity<Offer> createOffer(@RequestBody Offer offer) {
+    public ResponseEntity<OfferResponse> createOffer(
+            @Valid @RequestBody CreateOfferRequest request) {
 
-        Offer createdOffer = offerService.createOffer(offer);
+        OfferResponse createdOffer = offerService.createOffer(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOffer);
     }
 
-    // PUT /api/offers/{id}
+ // PUT /api/offers/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Offer> updateOffer(
+    public ResponseEntity<OfferResponse> updateOffer(
             @PathVariable Long id,
-            @RequestBody Offer updatedOffer) {
+            @Valid @RequestBody UpdateOfferRequest request) {
 
-        return offerService.updateOffer(id, updatedOffer)
+        return offerService.updateOffer(id, request)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -69,13 +76,13 @@ public class OfferController {
 
     // GET /api/offers/buyer/{buyerId}
     @GetMapping("/buyer/{buyerId}")
-    public List<Offer> getOffersByBuyerId(@PathVariable Long buyerId) {
+    public List<OfferResponse> getOffersByBuyerId(@PathVariable Long buyerId) {
         return offerService.getOffersByBuyerId(buyerId);
     }
 
     // GET /api/offers/announcement/{announcementId}
     @GetMapping("/announcement/{announcementId}")
-    public List<Offer> getOffersByAnnouncementId(
+    public List<OfferResponse> getOffersByAnnouncementId(
             @PathVariable Long announcementId) {
 
         return offerService.getOffersByAnnouncementId(announcementId);
