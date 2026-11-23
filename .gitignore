@@ -1,0 +1,14 @@
+# Maven build files
+target
+
+# Eclipse
+.classpath
+.project
+.settings
+
+# IntelliJ IDEA
+.idea
+.iml
+
+# Environment variables
+.env
