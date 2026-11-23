@@ -10,6 +10,9 @@ import com.agenceimmobiliere.identity_service.entity.User;
 import com.agenceimmobiliere.identity_service.enums.Role;
 import com.agenceimmobiliere.identity_service.repository.UserRepository;
 
+import com.agenceimmobiliere.identity_service.dto.LoginRequest;
+import com.agenceimmobiliere.identity_service.dto.LoginResponse;
+
 @Service
 public class UserService {
 
@@ -56,4 +59,37 @@ public class UserService {
                 savedUser.getRole()
         );
     }
+    
+    
+    
+    public LoginResponse login(LoginRequest request) {
+
+        // 1. Find user by email
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid email or password"));
+
+        // 2. Verify password
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        // 3. Check whether account is enabled
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("Account is disabled");
+        }
+
+        // 4. Return user information
+        return new LoginResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+    
+    
+    
+    
+    
 }
