@@ -14,9 +14,18 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "offers")
+@Table(
+	    name = "offers",
+	    uniqueConstraints = {
+	        @UniqueConstraint(
+	            name = "uk_buyer_announcement",
+	            columnNames = {"buyer_id", "announcement_id"}
+	        )
+	    }
+	)
 public class Offer {
 
     @Id

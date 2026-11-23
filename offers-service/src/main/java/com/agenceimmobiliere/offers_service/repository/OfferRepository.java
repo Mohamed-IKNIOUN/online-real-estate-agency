@@ -11,5 +11,7 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
     List<Offer> findByBuyerId(Long buyerId);
 
     List<Offer> findByAnnouncementId(Long announcementId);
+    
+    boolean existsByBuyerIdAndAnnouncementId(Long buyerId,Long announcementId);
 
 }

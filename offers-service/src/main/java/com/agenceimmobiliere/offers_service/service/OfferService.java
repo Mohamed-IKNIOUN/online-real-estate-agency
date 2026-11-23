@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.agenceimmobiliere.offers_service.entity.Offer;
+import com.agenceimmobiliere.offers_service.exception.DuplicateOfferException;
 import com.agenceimmobiliere.offers_service.repository.OfferRepository;
 
 import com.agenceimmobiliere.offers_service.dto.CreateOfferRequest;
@@ -38,7 +39,33 @@ public class OfferService {
     }
 
     // Create a new offer
+    /*public OfferResponse createOffer(CreateOfferRequest request) {
+
+        Offer offer = new Offer();
+
+        offer.setMessage(request.getMessage());
+        offer.setProposedAmount(request.getProposedAmount());
+        offer.setAnnouncementId(request.getAnnouncementId());
+        offer.setBuyerId(request.getBuyerId());
+
+        Offer savedOffer = offerRepository.save(offer);
+
+        return toOfferResponse(savedOffer);
+    }*/
+
     public OfferResponse createOffer(CreateOfferRequest request) {
+
+        boolean alreadyExists =
+                offerRepository.existsByBuyerIdAndAnnouncementId(
+                        request.getBuyerId(),
+                        request.getAnnouncementId()
+                );
+
+        if (alreadyExists) {
+            throw new DuplicateOfferException(
+                    "You have already submitted an offer for this announcement."
+            );
+        }
 
         Offer offer = new Offer();
 
@@ -51,7 +78,7 @@ public class OfferService {
 
         return toOfferResponse(savedOffer);
     }
-
+    
     // Update an existing offer
     public Optional<OfferResponse> updateOffer(
             Long id,
