@@ -9,7 +9,7 @@ import com.agenceimmobiliere.identity_service.dto.RegisterResponse;
 import com.agenceimmobiliere.identity_service.entity.User;
 import com.agenceimmobiliere.identity_service.enums.Role;
 import com.agenceimmobiliere.identity_service.repository.UserRepository;
-
+import com.agenceimmobiliere.identity_service.security.JwtService;
 import com.agenceimmobiliere.identity_service.dto.LoginRequest;
 import com.agenceimmobiliere.identity_service.dto.LoginResponse;
 
@@ -18,12 +18,17 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final JwtService jwtService;
+    
+    
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
+
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -78,14 +83,18 @@ public class UserService {
         if (!user.isEnabled()) {
             throw new IllegalArgumentException("Account is disabled");
         }
+        
+        String accessToken = jwtService.generateToken(user);
 
         // 4. Return user information
-        return new LoginResponse(
-                user.getId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getRole()
-        );
+
+		return new LoginResponse(
+		        user.getId(),
+		        user.getFullName(),
+		        user.getEmail(),
+		        user.getRole(),
+		        accessToken
+		);	
     }
     
     
