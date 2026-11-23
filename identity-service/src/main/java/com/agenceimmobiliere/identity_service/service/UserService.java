@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.agenceimmobiliere.identity_service.dto.RegisterRequest;
 import com.agenceimmobiliere.identity_service.dto.RegisterResponse;
+import com.agenceimmobiliere.identity_service.dto.UserResponse;
 import com.agenceimmobiliere.identity_service.entity.User;
 import com.agenceimmobiliere.identity_service.enums.Role;
 import com.agenceimmobiliere.identity_service.repository.UserRepository;
@@ -100,6 +101,20 @@ public class UserService {
                 user.getRole(),
                 accessToken,
                 refreshToken
+        );
+    }
+    
+    
+    public UserResponse getCurrentUser(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return new UserResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole()
         );
     }
     

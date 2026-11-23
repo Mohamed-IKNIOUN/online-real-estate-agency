@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -121,6 +122,20 @@ public class RefreshTokenService {
         String newAccessToken = jwtService.generateToken(user);
 
         return new RefreshResponse(newAccessToken, newRefreshToken);
+    }
+    
+    
+    @Transactional
+    public void revokeAllUserTokens(Long userId) {
+
+        List<RefreshToken> tokens =
+                refreshTokenRepository.findAllByUser_IdAndRevokedFalse(userId);
+
+        for (RefreshToken token : tokens) {
+            token.setRevoked(true);
+        }
+
+        refreshTokenRepository.saveAll(tokens);
     }
     
     

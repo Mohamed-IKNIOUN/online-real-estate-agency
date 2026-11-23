@@ -1,5 +1,6 @@
 package com.agenceimmobiliere.identity_service.controller;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -74,6 +75,16 @@ public class AuthController {
                 refreshTokenService.validateRefreshToken(request.getRefreshToken());
 
         refreshTokenService.revokeToken(refreshToken);
+
+        return ResponseEntity.noContent().build();
+    }
+    
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll(Authentication authentication) {
+
+    	Long userId = (Long) authentication.getPrincipal();
+
+        refreshTokenService.revokeAllUserTokens(userId);
 
         return ResponseEntity.noContent().build();
     }
