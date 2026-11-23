@@ -12,6 +12,8 @@ public class LoginResponse {
     private String accessToken;
     private String tokenType;
     
+    private String refreshToken;
+    
     public LoginResponse() {
     }
 
@@ -20,15 +22,25 @@ public class LoginResponse {
             String fullName,
             String email,
             Role role,
-            String accessToken) {
+            String accessToken,
+            String refreshToken) {
 
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.tokenType = "Bearer";
     }
+
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
+	}
 
 	public String getAccessToken() {
 		return accessToken;

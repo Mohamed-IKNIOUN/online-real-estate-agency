@@ -12,6 +12,7 @@ import com.agenceimmobiliere.identity_service.repository.UserRepository;
 import com.agenceimmobiliere.identity_service.security.JwtService;
 import com.agenceimmobiliere.identity_service.dto.LoginRequest;
 import com.agenceimmobiliere.identity_service.dto.LoginResponse;
+import com.agenceimmobiliere.identity_service.service.RefreshTokenService;
 
 @Service
 public class UserService {
@@ -19,16 +20,19 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
     
     
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -86,15 +90,17 @@ public class UserService {
         
         String accessToken = jwtService.generateToken(user);
 
-        // 4. Return user information
+        String refreshToken = refreshTokenService.createRefreshToken(user);
 
-		return new LoginResponse(
-		        user.getId(),
-		        user.getFullName(),
-		        user.getEmail(),
-		        user.getRole(),
-		        accessToken
-		);	
+        // 4. Return your informations
+        return new LoginResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole(),
+                accessToken,
+                refreshToken
+        );
     }
     
     
