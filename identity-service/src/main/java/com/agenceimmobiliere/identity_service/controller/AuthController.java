@@ -8,6 +8,9 @@ import com.agenceimmobiliere.identity_service.dto.RegisterRequest;
 import com.agenceimmobiliere.identity_service.dto.RegisterResponse;
 import com.agenceimmobiliere.identity_service.service.UserService;
 
+import com.agenceimmobiliere.identity_service.dto.LoginRequest;
+import com.agenceimmobiliere.identity_service.dto.LoginResponse;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -30,4 +33,16 @@ public class AuthController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+    
+    
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request) {
+
+        LoginResponse response = userService.login(request);
+
+        return ResponseEntity.ok(response);
+    }
+    
+    
 }
