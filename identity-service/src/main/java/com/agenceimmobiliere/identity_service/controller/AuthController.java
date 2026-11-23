@@ -7,10 +7,12 @@ import org.springframework.web.bind.annotation.*;
 
 import com.agenceimmobiliere.identity_service.dto.RegisterRequest;
 import com.agenceimmobiliere.identity_service.dto.RegisterResponse;
+import com.agenceimmobiliere.identity_service.dto.ResetPasswordRequest;
 import com.agenceimmobiliere.identity_service.entity.RefreshToken;
+import com.agenceimmobiliere.identity_service.service.PasswordResetService;
 import com.agenceimmobiliere.identity_service.service.RefreshTokenService;
 import com.agenceimmobiliere.identity_service.service.UserService;
-
+import com.agenceimmobiliere.identity_service.dto.ForgotPasswordRequest;
 import com.agenceimmobiliere.identity_service.dto.LoginRequest;
 import com.agenceimmobiliere.identity_service.dto.LoginResponse;
 
@@ -26,11 +28,15 @@ public class AuthController {
     private final UserService userService;
 
     private final RefreshTokenService refreshTokenService;
+    
+    private final PasswordResetService passwordResetService;
 
     public AuthController(
             UserService userService,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService,
+            PasswordResetService passwordResetService) {
 
+    	this.passwordResetService = passwordResetService;
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
     }
@@ -88,6 +94,31 @@ public class AuthController {
 
         return ResponseEntity.noContent().build();
     }
+    
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        passwordResetService.forgotPassword(request.getEmail());
+
+        return ResponseEntity.ok(
+                "If the email exists, a password reset link has been sent.");
+    }
+    
+    
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        passwordResetService.resetPassword(
+                request.getToken(),
+                request.getNewPassword());
+
+        return ResponseEntity.ok("Password reset successfully");
+    }
+    
+    
     
     
     
