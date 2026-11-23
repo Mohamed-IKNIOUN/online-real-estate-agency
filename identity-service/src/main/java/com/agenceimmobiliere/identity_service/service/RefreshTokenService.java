@@ -10,9 +10,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.agenceimmobiliere.identity_service.dto.RefreshResponse;
 import com.agenceimmobiliere.identity_service.entity.RefreshToken;
 import com.agenceimmobiliere.identity_service.entity.User;
 import com.agenceimmobiliere.identity_service.repository.RefreshTokenRepository;
+
+import com.agenceimmobiliere.identity_service.security.JwtService;
 
 @Service
 public class RefreshTokenService {
@@ -20,13 +23,17 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final long expirationDays;
 
+    private final JwtService jwtService;
+    
     private final SecureRandom secureRandom = new SecureRandom();
 
     public RefreshTokenService(
             RefreshTokenRepository refreshTokenRepository,
+            JwtService jwtService,
             @Value("${jwt.refresh-expiration-days:7}") long expirationDays) {
 
         this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtService = jwtService;
         this.expirationDays = expirationDays;
     }
 
@@ -97,4 +104,24 @@ public class RefreshTokenService {
             );
         }
     }
+    
+    
+    
+    
+    @Transactional
+    public RefreshResponse refresh(String rawToken) {
+
+        RefreshToken oldToken = validateRefreshToken(rawToken);
+
+        User user = oldToken.getUser();
+
+        revokeToken(oldToken);
+
+        String newRefreshToken = createRefreshToken(user);
+        String newAccessToken = jwtService.generateToken(user);
+
+        return new RefreshResponse(newAccessToken, newRefreshToken);
+    }
+    
+    
 }

@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.agenceimmobiliere.identity_service.dto.RegisterRequest;
 import com.agenceimmobiliere.identity_service.dto.RegisterResponse;
+import com.agenceimmobiliere.identity_service.entity.RefreshToken;
+import com.agenceimmobiliere.identity_service.service.RefreshTokenService;
 import com.agenceimmobiliere.identity_service.service.UserService;
 
 import com.agenceimmobiliere.identity_service.dto.LoginRequest;
@@ -13,14 +15,23 @@ import com.agenceimmobiliere.identity_service.dto.LoginResponse;
 
 import jakarta.validation.Valid;
 
+import com.agenceimmobiliere.identity_service.dto.RefreshRequest;
+import com.agenceimmobiliere.identity_service.dto.RefreshResponse;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final UserService userService;
 
-    public AuthController(UserService userService) {
+    private final RefreshTokenService refreshTokenService;
+
+    public AuthController(
+            UserService userService,
+            RefreshTokenService refreshTokenService) {
+
         this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/register")
@@ -43,6 +54,30 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+    
+    
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshResponse> refresh(
+            @Valid @RequestBody RefreshRequest request) {
+
+        RefreshResponse response = refreshTokenService.refresh(
+                request.getRefreshToken()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
+
+        RefreshToken refreshToken =
+                refreshTokenService.validateRefreshToken(request.getRefreshToken());
+
+        refreshTokenService.revokeToken(refreshToken);
+
+        return ResponseEntity.noContent().build();
+    }
+    
     
     
 }
