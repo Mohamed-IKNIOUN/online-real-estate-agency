@@ -14,7 +14,11 @@ import com.agenceimmobiliere.identity_service.security.JwtAuthenticationFilter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+
+
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
