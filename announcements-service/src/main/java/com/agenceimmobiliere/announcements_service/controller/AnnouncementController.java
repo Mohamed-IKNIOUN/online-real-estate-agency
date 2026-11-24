@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.agenceimmobiliere.announcements_service.entity.Announcement;
 import com.agenceimmobiliere.announcements_service.service.AnnouncementService;
 
+import java.util.Objects;
+
 import org.springframework.security.core.Authentication;
 
 @RestController
@@ -85,7 +87,7 @@ public class AnnouncementController {
 	    boolean isAdmin = authentication.getAuthorities().stream()
 	            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
 
-	    if (!isAdmin && !announcement.getAgentId().equals(userId)) {
+	    if (!isAdmin && !Objects.equals(announcement.getAgentId(), userId)) {
 	        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 	    }
 
@@ -96,15 +98,32 @@ public class AnnouncementController {
 	            .orElseGet(() -> ResponseEntity.notFound().build());
 	}
     
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAnnouncement(@PathVariable Long id) {
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+	public ResponseEntity<Void> deleteAnnouncement(
+	        @PathVariable Long id,
+	        Authentication authentication) {
 
-        boolean deleted = announcementService.deleteAnnouncement(id);
+	    Long userId = (Long) authentication.getPrincipal();
 
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
-        }
+	    Optional<Announcement> existingAnnouncement =
+	            announcementService.getAnnouncementById(id);
 
-        return ResponseEntity.noContent().build();
-    }
+	    if (existingAnnouncement.isEmpty()) {
+	        return ResponseEntity.notFound().build();
+	    }
+
+	    Announcement announcement = existingAnnouncement.get();
+
+	    boolean isAdmin = authentication.getAuthorities().stream()
+	            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+	    if (!isAdmin && !Objects.equals(announcement.getAgentId(), userId)) {
+	        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+	    }
+
+	    announcementService.deleteAnnouncement(id);
+
+	    return ResponseEntity.noContent().build();
+	}
 }
