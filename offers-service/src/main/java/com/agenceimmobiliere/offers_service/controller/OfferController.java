@@ -74,9 +74,14 @@ public class OfferController {
 
     // DELETE /api/offers/{id}
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOffer(@PathVariable Long id) {
+    @PreAuthorize("hasRole('BUYER')")
+    public ResponseEntity<Void> deleteOffer(
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        boolean deleted = offerService.deleteOffer(id);
+        Long buyerId = (Long) authentication.getPrincipal();
+
+        boolean deleted = offerService.deleteOffer(id, buyerId);
 
         if (!deleted) {
             return ResponseEntity.notFound().build();
