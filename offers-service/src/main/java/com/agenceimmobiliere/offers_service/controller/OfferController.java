@@ -17,6 +17,8 @@ import com.agenceimmobiliere.offers_service.dto.OfferResponse;
 
 import jakarta.validation.Valid;
 
+import org.springframework.security.access.AccessDeniedException;
+
 @RestController
 @RequestMapping("/api/offers")
 public class OfferController {
@@ -28,6 +30,7 @@ public class OfferController {
     }
 
     // GET /api/offers
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<OfferResponse> getAllOffers() {
         return offerService.getAllOffers();
@@ -92,8 +95,18 @@ public class OfferController {
 
     // GET /api/offers/buyer/{buyerId}
     @GetMapping("/buyer/{buyerId}")
-    public List<OfferResponse> getOffersByBuyerId(@PathVariable Long buyerId) {
-        return offerService.getOffersByBuyerId(buyerId);
+    @PreAuthorize("hasRole('BUYER')")
+    public List<OfferResponse> getOffersByBuyerId(
+            @PathVariable Long buyerId,
+            Authentication authentication) {
+
+        Long currentBuyerId = (Long) authentication.getPrincipal();
+
+        if (!currentBuyerId.equals(buyerId)) {
+            throw new AccessDeniedException("You cannot view another buyer's offers.");
+        }
+
+        return offerService.getOffersByBuyerId(currentBuyerId);
     }
 
     // GET /api/offers/announcement/{announcementId}
