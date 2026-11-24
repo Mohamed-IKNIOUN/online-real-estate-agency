@@ -111,6 +111,7 @@ public class OfferController {
 
     // GET /api/offers/announcement/{announcementId}
     @GetMapping("/announcement/{announcementId}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     public List<OfferResponse> getOffersByAnnouncementId(
             @PathVariable Long announcementId) {
 
