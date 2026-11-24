@@ -45,8 +45,25 @@ public class Announcement {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal area;
+    
+    @Column
+    private Long agentId;
+    
+    
 
-    public Announcement() {
+    public Long getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(Long agentId) {
+		this.agentId = agentId;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public Announcement() {
     }
 
     public Long getId() {

@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.agenceimmobiliere.announcements_service.entity.Announcement;
 import com.agenceimmobiliere.announcements_service.service.AnnouncementService;
 
+import org.springframework.security.core.Authentication;
+
 @RestController
 @RequestMapping("/api/announcements")
 public class AnnouncementController {
@@ -50,12 +52,17 @@ public class AnnouncementController {
 	}
 
 	@PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Announcement createAnnouncement(
-            @RequestBody Announcement announcement) {
-        return announcementService.createAnnouncement(announcement);
-    }
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	public Announcement createAnnouncement(
+	        @RequestBody Announcement announcement,
+	        Authentication authentication) {
+
+	    Long userId = (Long) authentication.getPrincipal();
+	    announcement.setAgentId(userId);
+
+	    return announcementService.createAnnouncement(announcement);
+	}
     
     @PutMapping("/{id}")
     public ResponseEntity<Announcement> updateAnnouncement(
