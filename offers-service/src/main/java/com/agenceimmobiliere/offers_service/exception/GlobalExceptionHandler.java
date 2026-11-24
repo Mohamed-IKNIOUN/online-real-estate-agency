@@ -9,6 +9,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.access.AccessDeniedException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -62,6 +65,32 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(response);
+    }
+    
+    
+    // Hanlde offer creation
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthorizationDenied(
+            AuthorizationDeniedException exception) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Access denied");
+        response.put("status", 403);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+    
+    
+     // Handle offers editing
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            AccessDeniedException exception) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", exception.getMessage());
+        response.put("status", 403);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
     
     

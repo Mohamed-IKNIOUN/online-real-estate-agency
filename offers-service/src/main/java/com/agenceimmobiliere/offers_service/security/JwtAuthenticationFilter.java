@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (jwtService.isTokenValid(token)) {
 
-                Claims claims = jwtService.extractAllClaims(token);
+                /*Claims claims = jwtService.extractAllClaims(token);
 
                 Long userId = Long.valueOf(claims.getSubject());
                 String role = claims.get("role", String.class);
@@ -50,7 +50,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 List.of(new SimpleGrantedAuthority("ROLE_" + role))
                         );
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);*/
+            	
+            	try {
+            	    System.out.println("JWT HEADER RECEIVED");
+
+            	    Claims claims = jwtService.extractAllClaims(token);
+
+            	    System.out.println("JWT USER ID: " + claims.getSubject());
+            	    System.out.println("JWT ROLE: " + claims.get("role", String.class));
+
+            	    Long userId = Long.valueOf(claims.getSubject());
+            	    String role = claims.get("role", String.class);
+
+            	    UsernamePasswordAuthenticationToken authentication =
+            	            new UsernamePasswordAuthenticationToken(
+            	                    userId,
+            	                    null,
+            	                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
+            	            );
+
+            	    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            	} catch (Exception exception) {
+            	    System.out.println("JWT ERROR: " + exception.getMessage());
+            	    SecurityContextHolder.clearContext();
+            	}
             }
         }
 
