@@ -12,3 +12,16 @@ target
 
 # Environment variables
 .env
+
+# Local favourites-service QA output
+/favourites-service/.sonar/
+/favourites-service/.scannerwork/
+/favourites-service/jmeter/results/
+/favourites-service/jmeter.log
+/favourites-service/jmeter/jmeter.log
+/favourites-service/security/snyk-before.json
+/favourites-service/security/snyk-after.json
+/favourites-service/security/snyk-report.json
+/favourites-service/security/zap-passive.html
+/favourites-service/security/zap-passive.json
+/jmeter.log

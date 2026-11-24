@@ -1,0 +1,695 @@
+{
+  "info": {
+    "name": "Favourites Service — Local REST tests",
+    "description": "Run the main folder in order against disposable local test data. Configure the collection variables first. Run the outage folder separately.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "announcementsUrl",
+      "value": "http://localhost:8081/api/announcements",
+      "type": "string"
+    },
+    {
+      "key": "annonceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "missingAnnonceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "identityUrl",
+      "value": "http://localhost:8085",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Main suite — announcements running",
+      "item": [
+        {
+          "name": "Log in as dedicated buyer",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{identityUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{favouritesLoginBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('favouritesBuyerEmail');",
+                  "const password = pm.environment.get('favouritesBuyerPassword');",
+                  "pm.variables.unset('favouritesAccessToken');",
+                  "pm.variables.unset('clientId');",
+                  "if (!email || !password) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "pm.variables.set('favouritesLoginBody', JSON.stringify({ email, password }));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let login;",
+                  "try { login = pm.response.json(); } catch { login = null; }",
+                  "const valid = pm.response.code === 200 && login?.role === 'BUYER' &&",
+                  "  Number.isSafeInteger(login.id) && login.id > 0 &&",
+                  "  typeof login.accessToken === 'string' && login.accessToken.length > 0;",
+                  "if (!valid) pm.execution.setNextRequest(null);",
+                  "pm.test('Dedicated buyer login succeeds', function () { pm.expect(valid).to.eql(true); });",
+                  "if (valid) {",
+                  "  pm.variables.set('favouritesAccessToken', login.accessToken);",
+                  "  pm.variables.set('clientId', String(login.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject list without bearer token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/favoris/client/{{clientId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code !== 401) pm.execution.setNextRequest(null);",
+                  "pm.test('Returns 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject cross-client GET",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/favoris/client/{{otherClientId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const other = Number(pm.environment.get('otherClientId'));",
+                  "if (!Number.isSafeInteger(other) || other <= 0 || other === Number(pm.variables.get('clientId'))) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "pm.variables.set('otherClientId', String(other));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code !== 403) pm.execution.setNextRequest(null);",
+                  "pm.test('Returns 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject cross-client POST",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/{{otherClientId}}/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const other = Number(pm.environment.get('otherClientId'));",
+                  "if (!Number.isSafeInteger(other) || other <= 0 || other === Number(pm.variables.get('clientId'))) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "pm.variables.set('otherClientId', String(other));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject cross-client DELETE",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/favoris/{{otherClientId}}/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const other = Number(pm.environment.get('otherClientId'));",
+                  "if (!Number.isSafeInteger(other) || other <= 0 || other === Number(pm.variables.get('clientId'))) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "pm.variables.set('otherClientId', String(other));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify existing announcement fixture",
+          "request": {
+            "method": "GET",
+            "url": "{{announcementsUrl}}/{{annonceId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Fixture ID matches\", function () { pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('annonceId'))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify missing announcement fixture",
+          "request": {
+            "method": "GET",
+            "url": "{{announcementsUrl}}/{{missingAnnonceId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject a malformed announcement ID",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/invalid",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject a zero client ID",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/0/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject a negative client ID on list",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/favoris/client/-1",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject a zero announcement ID on delete",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/0",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject a missing announcement",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/{{missingAnnonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create favourite",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Persisted favourite has the requested IDs and a generated ID\", function () { const clientId = Number(pm.variables.get('clientId')); const annonceId = Number(pm.variables.get('annonceId')); const row = pm.response.json(); pm.expect(row.clientId === clientId && row.annonceId === annonceId).to.eql(true); pm.expect(row.id).to.be.a('number').and.to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject duplicate favourite",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List favourites and find exactly one matching pair",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/favoris/client/{{clientId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Matching pair appears once\", function () { const clientId = Number(pm.variables.get('clientId')); const annonceId = Number(pm.variables.get('annonceId')); const rows = pm.response.json(); pm.expect(rows).to.be.an('array'); pm.expect(rows.filter(row => row.clientId === clientId && row.annonceId === annonceId)).to.have.lengthOf(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete favourite",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"Response has no body\", function () { pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm favourite was removed",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/favoris/client/{{clientId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Removed pair is absent\", function () { const clientId = Number(pm.variables.get('clientId')); const annonceId = Number(pm.variables.get('annonceId')); const rows = pm.response.json(); pm.expect(rows).to.be.an('array'); pm.expect(rows.some(row => row.clientId === clientId && row.annonceId === annonceId)).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject deleting a missing favourite",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/{{annonceId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Outage check — run separately",
+      "item": [
+        {
+          "name": "Log in as dedicated buyer",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{identityUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{favouritesLoginBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('favouritesBuyerEmail');",
+                  "const password = pm.environment.get('favouritesBuyerPassword');",
+                  "pm.variables.unset('favouritesAccessToken');",
+                  "pm.variables.unset('clientId');",
+                  "if (!email || !password) {",
+                  "  pm.execution.setNextRequest(null);",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "pm.variables.set('favouritesLoginBody', JSON.stringify({ email, password }));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let login;",
+                  "try { login = pm.response.json(); } catch { login = null; }",
+                  "const valid = pm.response.code === 200 && login?.role === 'BUYER' &&",
+                  "  Number.isSafeInteger(login.id) && login.id > 0 &&",
+                  "  typeof login.accessToken === 'string' && login.accessToken.length > 0;",
+                  "if (!valid) pm.execution.setNextRequest(null);",
+                  "pm.test('Dedicated buyer login succeeds', function () { pm.expect(valid).to.eql(true); });",
+                  "if (valid) {",
+                  "  pm.variables.set('favouritesAccessToken', login.accessToken);",
+                  "  pm.variables.set('clientId', String(login.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject add when announcements is unreachable",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/favoris/{{clientId}}/{{annonceId}}",
+            "description": "Stop only the announcements service and keep favourites and PostgreSQL running. Ensure this favourite pair is absent before sending.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{favouritesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 503\", function () { pm.response.to.have.status(503); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
