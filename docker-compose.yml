@@ -69,5 +69,18 @@ services:
       postgres:
         condition: service_healthy
 
+  identity-service:
+    build: ./identity-service
+    container_name: identity-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+      SPRING_DATASOURCE_USERNAME: agence_admin
+      SPRING_DATASOURCE_PASSWORD: agence_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
