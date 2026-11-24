@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 //import com.agenceimmobiliere.offers_service.entity.Offer;
@@ -42,10 +44,15 @@ public class OfferController {
 
  // POST /api/offers
     @PostMapping
+    @PreAuthorize("hasRole('BUYER')")
     public ResponseEntity<OfferResponse> createOffer(
-            @Valid @RequestBody CreateOfferRequest request) {
+            @Valid @RequestBody CreateOfferRequest request,
+            Authentication authentication) {
 
-        OfferResponse createdOffer = offerService.createOffer(request);
+        Long buyerId = (Long) authentication.getPrincipal();
+
+        OfferResponse createdOffer =
+                offerService.createOffer(request, buyerId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOffer);
     }

@@ -38,26 +38,12 @@ public class OfferService {
                 .map(this::toOfferResponse);
     }
 
-    // Create a new offer
-    /*public OfferResponse createOffer(CreateOfferRequest request) {
-
-        Offer offer = new Offer();
-
-        offer.setMessage(request.getMessage());
-        offer.setProposedAmount(request.getProposedAmount());
-        offer.setAnnouncementId(request.getAnnouncementId());
-        offer.setBuyerId(request.getBuyerId());
-
-        Offer savedOffer = offerRepository.save(offer);
-
-        return toOfferResponse(savedOffer);
-    }*/
-
-    public OfferResponse createOffer(CreateOfferRequest request) {
+    // Create an Offer
+    public OfferResponse createOffer(CreateOfferRequest request, Long buyerId) {
 
         boolean alreadyExists =
                 offerRepository.existsByBuyerIdAndAnnouncementId(
-                        request.getBuyerId(),
+                        buyerId,
                         request.getAnnouncementId()
                 );
 
@@ -72,7 +58,7 @@ public class OfferService {
         offer.setMessage(request.getMessage());
         offer.setProposedAmount(request.getProposedAmount());
         offer.setAnnouncementId(request.getAnnouncementId());
-        offer.setBuyerId(request.getBuyerId());
+        offer.setBuyerId(buyerId);
 
         Offer savedOffer = offerRepository.save(offer);
 
