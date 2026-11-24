@@ -59,11 +59,15 @@ public class OfferController {
 
  // PUT /api/offers/{id}
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('BUYER')")
     public ResponseEntity<OfferResponse> updateOffer(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateOfferRequest request) {
+            @Valid @RequestBody UpdateOfferRequest request,
+            Authentication authentication) {
 
-        return offerService.updateOffer(id, request)
+        Long buyerId = (Long) authentication.getPrincipal();
+
+        return offerService.updateOffer(id, request, buyerId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

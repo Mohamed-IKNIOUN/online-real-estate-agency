@@ -13,6 +13,9 @@ import com.agenceimmobiliere.offers_service.dto.CreateOfferRequest;
 import com.agenceimmobiliere.offers_service.dto.UpdateOfferRequest;
 import com.agenceimmobiliere.offers_service.dto.OfferResponse;
 
+
+import org.springframework.security.access.AccessDeniedException;
+
 @Service
 public class OfferService {
 
@@ -68,7 +71,8 @@ public class OfferService {
     // Update an existing offer
     public Optional<OfferResponse> updateOffer(
             Long id,
-            UpdateOfferRequest request) {
+            UpdateOfferRequest request,
+            Long buyerId) {
 
         Optional<Offer> existingOffer = offerRepository.findById(id);
 
@@ -77,6 +81,10 @@ public class OfferService {
         }
 
         Offer offer = existingOffer.get();
+
+        if (!offer.getBuyerId().equals(buyerId)) {
+            throw new AccessDeniedException("You cannot update another buyer's offer.");
+        }
 
         offer.setMessage(request.getMessage());
         offer.setProposedAmount(request.getProposedAmount());
