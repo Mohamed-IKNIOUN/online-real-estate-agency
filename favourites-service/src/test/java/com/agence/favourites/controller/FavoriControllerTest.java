@@ -39,7 +39,7 @@ class FavoriControllerTest {
     void createsFavouriteAndReturnsIt() throws Exception {
         when(service.ajouter(1L, 10L)).thenReturn(new Favori(1L, 10L));
 
-        mvc.perform(post("/api/favoris/{clientId}/{annonceId}", 1, 10))
+        mvc.perform(post("/api/favoris/{clientId}/{annonceId}", 1, 10).principal(() -> "1"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.clientId").value(1))
                 .andExpect(jsonPath("$.annonceId").value(10));
@@ -49,7 +49,7 @@ class FavoriControllerTest {
     void listsFavouritesForClient() throws Exception {
         when(service.consulter(1L)).thenReturn(List.of(new Favori(1L, 10L)));
 
-        mvc.perform(get("/api/favoris/client/{clientId}", 1))
+        mvc.perform(get("/api/favoris/client/{clientId}", 1).principal(() -> "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].clientId").value(1))
@@ -58,7 +58,7 @@ class FavoriControllerTest {
 
     @Test
     void deletesFavouriteAndReturnsNoContent() throws Exception {
-        mvc.perform(delete("/api/favoris/{clientId}/{annonceId}", 1, 10))
+        mvc.perform(delete("/api/favoris/{clientId}/{annonceId}", 1, 10).principal(() -> "1"))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
@@ -67,7 +67,7 @@ class FavoriControllerTest {
 
     @Test
     void rejectsMalformedIdsBeforeCallingService() throws Exception {
-        mvc.perform(post("/api/favoris/{clientId}/{annonceId}", 1, "invalid"))
+        mvc.perform(post("/api/favoris/{clientId}/{annonceId}", 1, "invalid").principal(() -> "1"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(service);
@@ -77,9 +77,11 @@ class FavoriControllerTest {
     @CsvSource({"0, BAD_REQUEST", "1, CONFLICT", "1, NOT_FOUND", "1, SERVICE_UNAVAILABLE"})
     void returnsServiceErrorsWhenAddingFavourite(long clientId, HttpStatus error)
             throws Exception {
-        when(service.ajouter(clientId, 10L)).thenThrow(new ResponseStatusException(error));
+        if (clientId > 0) {
+            when(service.ajouter(clientId, 10L)).thenThrow(new ResponseStatusException(error));
+        }
 
-        mvc.perform(post("/api/favoris/{clientId}/{annonceId}", clientId, 10))
+        mvc.perform(post("/api/favoris/{clientId}/{annonceId}", clientId, 10).principal(() -> "1"))
                 .andExpect(status().is(error.value()));
     }
 
@@ -88,7 +90,7 @@ class FavoriControllerTest {
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND))
                 .when(service).supprimer(1L, 10L);
 
-        mvc.perform(delete("/api/favoris/{clientId}/{annonceId}", 1, 10))
+        mvc.perform(delete("/api/favoris/{clientId}/{annonceId}", 1, 10).principal(() -> "1"))
                 .andExpect(status().isNotFound());
     }
 }
