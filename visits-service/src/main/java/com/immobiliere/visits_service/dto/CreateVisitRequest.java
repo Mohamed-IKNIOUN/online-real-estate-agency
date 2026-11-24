@@ -17,6 +17,8 @@ public class CreateVisitRequest {
     @NotNull(message = "Client ID is required")
     private Long clientId;
 
+    private Long agentId;
+
     @NotNull(message = "Visit date is required")
     @Future(message = "Visit date must be in the future")
     private LocalDate date;

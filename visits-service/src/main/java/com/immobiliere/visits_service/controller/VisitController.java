@@ -27,9 +27,10 @@ public class VisitController {
     @GetMapping
     public ResponseEntity<List<VisitResponse>> getAllVisits(
             @RequestParam(required = false) Long clientId,
-            @RequestParam(required = false) Long announcementId
+            @RequestParam(required = false) Long announcementId,
+            @RequestParam(required = false) Long agentId
     ) {
-        List<VisitResponse> visits = visitService.getAllVisits(clientId, announcementId);
+        List<VisitResponse> visits = visitService.getAllVisits(clientId, announcementId, agentId);
         return ResponseEntity.ok(visits);
     }
 
@@ -37,6 +38,24 @@ public class VisitController {
     public ResponseEntity<VisitResponse> getVisitById(@PathVariable Long id) {
         VisitResponse visit = visitService.getVisitById(id);
         return ResponseEntity.ok(visit);
+    }
+
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<VisitResponse>> getVisitsByClient(@PathVariable Long clientId) {
+        List<VisitResponse> visits = visitService.getVisitsByClient(clientId);
+        return ResponseEntity.ok(visits);
+    }
+
+    @GetMapping("/agent/{agentId}")
+    public ResponseEntity<List<VisitResponse>> getVisitsByAgent(@PathVariable Long agentId) {
+        List<VisitResponse> visits = visitService.getVisitsByAgent(agentId);
+        return ResponseEntity.ok(visits);
+    }
+
+    @GetMapping("/announcement/{announcementId}")
+    public ResponseEntity<List<VisitResponse>> getVisitsByAnnouncement(@PathVariable Long announcementId) {
+        List<VisitResponse> visits = visitService.getVisitsByAnnouncement(announcementId);
+        return ResponseEntity.ok(visits);
     }
 
     @PatchMapping("/{id}/status")
