@@ -95,13 +95,22 @@ public class OfferService {
     }
 
     // Delete an offer
-    public boolean deleteOffer(Long id) {
+    public boolean deleteOffer(Long id, Long buyerId) {
 
-        if (!offerRepository.existsById(id)) {
+        Optional<Offer> existingOffer = offerRepository.findById(id);
+
+        if (existingOffer.isEmpty()) {
             return false;
         }
 
-        offerRepository.deleteById(id);
+        Offer offer = existingOffer.get();
+
+        if (!offer.getBuyerId().equals(buyerId)) {
+            throw new AccessDeniedException("You cannot delete another buyer's offer.");
+        }
+
+        offerRepository.delete(offer);
+
         return true;
     }
 

@@ -17,6 +17,8 @@ import com.agenceimmobiliere.offers_service.dto.OfferResponse;
 
 import jakarta.validation.Valid;
 
+import org.springframework.security.access.AccessDeniedException;
+
 @RestController
 @RequestMapping("/api/offers")
 public class OfferController {
@@ -28,6 +30,7 @@ public class OfferController {
     }
 
     // GET /api/offers
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<OfferResponse> getAllOffers() {
         return offerService.getAllOffers();
@@ -35,10 +38,25 @@ public class OfferController {
 
     // GET /api/offers/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<OfferResponse> getOfferById(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('BUYER', 'ADMIN')")
+    public ResponseEntity<OfferResponse> getOfferById(
+            @PathVariable Long id,
+            Authentication authentication) {
 
         return offerService.getOfferById(id)
-                .map(ResponseEntity::ok)
+                .map(offer -> {
+                    Long userId = (Long) authentication.getPrincipal();
+
+                    boolean isAdmin = authentication.getAuthorities().stream()
+                            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+                    if (!isAdmin && !offer.getBuyerId().equals(userId)) {
+                        throw new AccessDeniedException(
+                                "You cannot view another buyer's offer.");
+                    }
+
+                    return ResponseEntity.ok(offer);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -74,9 +92,14 @@ public class OfferController {
 
     // DELETE /api/offers/{id}
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOffer(@PathVariable Long id) {
+    @PreAuthorize("hasRole('BUYER')")
+    public ResponseEntity<Void> deleteOffer(
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        boolean deleted = offerService.deleteOffer(id);
+        Long buyerId = (Long) authentication.getPrincipal();
+
+        boolean deleted = offerService.deleteOffer(id, buyerId);
 
         if (!deleted) {
             return ResponseEntity.notFound().build();
@@ -87,12 +110,23 @@ public class OfferController {
 
     // GET /api/offers/buyer/{buyerId}
     @GetMapping("/buyer/{buyerId}")
-    public List<OfferResponse> getOffersByBuyerId(@PathVariable Long buyerId) {
-        return offerService.getOffersByBuyerId(buyerId);
+    @PreAuthorize("hasRole('BUYER')")
+    public List<OfferResponse> getOffersByBuyerId(
+            @PathVariable Long buyerId,
+            Authentication authentication) {
+
+        Long currentBuyerId = (Long) authentication.getPrincipal();
+
+        if (!currentBuyerId.equals(buyerId)) {
+            throw new AccessDeniedException("You cannot view another buyer's offers.");
+        }
+
+        return offerService.getOffersByBuyerId(currentBuyerId);
     }
 
     // GET /api/offers/announcement/{announcementId}
     @GetMapping("/announcement/{announcementId}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     public List<OfferResponse> getOffersByAnnouncementId(
             @PathVariable Long announcementId) {
 
