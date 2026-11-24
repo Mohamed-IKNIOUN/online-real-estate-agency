@@ -38,6 +38,7 @@ public class VisitService {
         Visit visit = Visit.builder()
                 .announcementId(request.getAnnouncementId())
                 .clientId(request.getClientId())
+                .agentId(request.getAgentId())
                 .date(request.getDate())
                 .heure(visitTime)
                 .status(VisitStatus.DEMANDEE)
@@ -47,12 +48,14 @@ public class VisitService {
         return mapToResponse(savedVisit);
     }
 
-    public List<VisitResponse> getAllVisits(Long clientId, Long announcementId) {
+    public List<VisitResponse> getAllVisits(Long clientId, Long announcementId, Long agentId) {
         List<Visit> visits;
         if (clientId != null) {
             visits = visitRepository.findByClientId(clientId);
         } else if (announcementId != null) {
             visits = visitRepository.findByAnnouncementId(announcementId);
+        } else if (agentId != null) {
+            visits = visitRepository.findByAgentId(agentId);
         } else {
             visits = visitRepository.findAll();
         }
@@ -66,6 +69,24 @@ public class VisitService {
         Visit visit = visitRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Visit not found with id: " + id));
         return mapToResponse(visit);
+    }
+
+    public List<VisitResponse> getVisitsByClient(Long clientId) {
+        return visitRepository.findByClientId(clientId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<VisitResponse> getVisitsByAgent(Long agentId) {
+        return visitRepository.findByAgentId(agentId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<VisitResponse> getVisitsByAnnouncement(Long announcementId) {
+        return visitRepository.findByAnnouncementId(announcementId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional

@@ -130,7 +130,7 @@ class VisitServiceTest {
         when(visitRepository.findAll()).thenReturn(List.of(visit1, visit2));
 
         // On passe null, null pour déclencher le bloc "else" (findAll)
-        List<VisitResponse> responses = visitService.getAllVisits(null, null);
+        List<VisitResponse> responses = visitService.getAllVisits(null, null, null);
 
         assertNotNull(responses);
         assertEquals(2, responses.size());
@@ -143,7 +143,7 @@ class VisitServiceTest {
         when(visitRepository.findAll()).thenReturn(List.of());
 
         // On passe null, null pour déclencher le bloc "else" (findAll)
-        List<VisitResponse> responses = visitService.getAllVisits(null, null);
+        List<VisitResponse> responses = visitService.getAllVisits(null, null, null);
 
         assertNotNull(responses);
         assertTrue(responses.isEmpty());
@@ -157,7 +157,7 @@ class VisitServiceTest {
 
         when(visitRepository.findByClientId(5L)).thenReturn(List.of(visit));
 
-        List<VisitResponse> responses = visitService.getAllVisits(5L, null);
+        List<VisitResponse> responses = visitService.getAllVisits(5L, null, null);
 
         assertNotNull(responses);
         assertEquals(1, responses.size());
@@ -173,7 +173,7 @@ class VisitServiceTest {
 
         when(visitRepository.findByAnnouncementId(1L)).thenReturn(List.of(visit));
 
-        List<VisitResponse> responses = visitService.getAllVisits(null, 1L);
+        List<VisitResponse> responses = visitService.getAllVisits(null, 1L, null);
 
         assertNotNull(responses);
         assertEquals(1, responses.size());
@@ -254,5 +254,79 @@ class VisitServiceTest {
         });
 
         verify(visitRepository, never()).delete(any(Visit.class));
+    }
+
+    // ---------------------------------------------------------
+    // TESTS POUR LES 3 NOUVEAUX ENDPOINTS / MÉTHODES Dédiés
+    // ---------------------------------------------------------
+
+    // 11. CAS NORMAL : Récupération des visites par Client ID dédié
+    @Test
+    void testGetVisitsByClient_NormalCase() {
+        Long clientId = 5L;
+        Visit visit = Visit.builder()
+                .id(1L)
+                .announcementId(1L)
+                .clientId(clientId)
+                .date(LocalDate.now())
+                .heure(LocalTime.of(10, 0))
+                .status(VisitStatus.DEMANDEE)
+                .build();
+
+        when(visitRepository.findByClientId(clientId)).thenReturn(List.of(visit));
+
+        List<VisitResponse> responses = visitService.getVisitsByClient(clientId);
+
+        assertNotNull(responses);
+        assertEquals(1, responses.size());
+        assertEquals(clientId, responses.get(0).getClientId());
+        verify(visitRepository, times(1)).findByClientId(clientId);
+    }
+
+    // 12. CAS NORMAL : Récupération des visites par Agent ID dédié
+    @Test
+    void testGetVisitsByAgent_NormalCase() {
+        Long agentId = 3L;
+        Visit visit = Visit.builder()
+                .id(1L)
+                .announcementId(1L)
+                .clientId(5L)
+                .agentId(agentId)
+                .date(LocalDate.now())
+                .heure(LocalTime.of(11, 0))
+                .status(VisitStatus.CONFIRMEE)
+                .build();
+
+        when(visitRepository.findByAgentId(agentId)).thenReturn(List.of(visit));
+
+        List<VisitResponse> responses = visitService.getVisitsByAgent(agentId);
+
+        assertNotNull(responses);
+        assertEquals(1, responses.size());
+        assertEquals(agentId, responses.get(0).getAgentId());
+        verify(visitRepository, times(1)).findByAgentId(agentId);
+    }
+
+    // 13. CAS NORMAL : Récupération des visites par Announcement ID dédié
+    @Test
+    void testGetVisitsByAnnouncement_NormalCase() {
+        Long announcementId = 10L;
+        Visit visit = Visit.builder()
+                .id(1L)
+                .announcementId(announcementId)
+                .clientId(5L)
+                .date(LocalDate.now())
+                .heure(LocalTime.of(15, 0))
+                .status(VisitStatus.DEMANDEE)
+                .build();
+
+        when(visitRepository.findByAnnouncementId(announcementId)).thenReturn(List.of(visit));
+
+        List<VisitResponse> responses = visitService.getVisitsByAnnouncement(announcementId);
+
+        assertNotNull(responses);
+        assertEquals(1, responses.size());
+        assertEquals(announcementId, responses.get(0).getAnnouncementId());
+        verify(visitRepository, times(1)).findByAnnouncementId(announcementId);
     }
 }

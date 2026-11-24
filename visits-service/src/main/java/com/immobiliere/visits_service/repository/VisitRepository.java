@@ -18,6 +18,8 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
 
     List<Visit> findByAnnouncementId(Long announcementID);
 
+    List<Visit> findByAgentId(Long agentId);
+
     List<Visit> findByStatus(VisitStatus status);
 
     @Query("SELECT COUNT(v) > 0 FROM Visit v WHERE v.announcementId = :announcementId AND v.date = :date AND v.heure = :heure AND v.status NOT IN :statuses")
