@@ -64,18 +64,37 @@ public class AnnouncementController {
 	    return announcementService.createAnnouncement(announcement);
 	}
     
-    @PutMapping("/{id}")
-    public ResponseEntity<Announcement> updateAnnouncement(
-            @PathVariable Long id,
-            @RequestBody Announcement updatedAnnouncement) {
+	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+	public ResponseEntity<Announcement> updateAnnouncement(
+	        @PathVariable Long id,
+	        @RequestBody Announcement updatedAnnouncement,
+	        Authentication authentication) {
 
-        Optional<Announcement> announcement =
-                announcementService.updateAnnouncement(id, updatedAnnouncement);
+	    Long userId = (Long) authentication.getPrincipal();
 
-        return announcement
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
+	    Optional<Announcement> existingAnnouncement =
+	            announcementService.getAnnouncementById(id);
+
+	    if (existingAnnouncement.isEmpty()) {
+	        return ResponseEntity.notFound().build();
+	    }
+
+	    Announcement announcement = existingAnnouncement.get();
+
+	    boolean isAdmin = authentication.getAuthorities().stream()
+	            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+	    if (!isAdmin && !announcement.getAgentId().equals(userId)) {
+	        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+	    }
+
+	    Optional<Announcement> updated =
+	            announcementService.updateAnnouncement(id, updatedAnnouncement);
+
+	    return updated.map(ResponseEntity::ok)
+	            .orElseGet(() -> ResponseEntity.notFound().build());
+	}
     
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAnnouncement(@PathVariable Long id) {
