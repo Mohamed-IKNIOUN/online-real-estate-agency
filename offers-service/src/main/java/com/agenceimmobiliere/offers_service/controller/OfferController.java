@@ -19,14 +19,24 @@ import jakarta.validation.Valid;
 
 import org.springframework.security.access.AccessDeniedException;
 
+//import org.springframework.security.core.Authentication;
+//import org.springframework.web.server.ResponseStatusException;
+//import org.springframework.http.HttpStatus;
+//import org.springframework.security.access.AccessDeniedException;
+
+import com.agenceimmobiliere.offers_service.client.AnnouncementClient;
+import com.agenceimmobiliere.offers_service.dto.AnnouncementResponse;
+
 @RestController
 @RequestMapping("/api/offers")
 public class OfferController {
 
     private final OfferService offerService;
+    private final AnnouncementClient announcementClient;
 
-    public OfferController(OfferService offerService) {
+    public OfferController(OfferService offerService, AnnouncementClient announcementClient) {
         this.offerService = offerService;
+        this.announcementClient = announcementClient;
     }
 
     // GET /api/offers
@@ -128,7 +138,23 @@ public class OfferController {
     @GetMapping("/announcement/{announcementId}")
     @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     public List<OfferResponse> getOffersByAnnouncementId(
-            @PathVariable Long announcementId) {
+            @PathVariable Long announcementId,
+            Authentication authentication) {
+
+        Long userId = (Long) authentication.getPrincipal();
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            AnnouncementResponse announcement =
+                    announcementClient.getAnnouncement(announcementId);
+
+            if (!userId.equals(announcement.getAgentId())) {
+                throw new AccessDeniedException(
+                        "You cannot view offers for another agent's announcement.");
+            }
+        }
 
         return offerService.getOffersByAnnouncementId(announcementId);
     }
