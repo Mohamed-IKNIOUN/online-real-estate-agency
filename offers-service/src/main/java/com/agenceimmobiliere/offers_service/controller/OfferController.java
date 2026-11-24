@@ -27,6 +27,10 @@ import org.springframework.security.access.AccessDeniedException;
 import com.agenceimmobiliere.offers_service.client.AnnouncementClient;
 import com.agenceimmobiliere.offers_service.dto.AnnouncementResponse;
 
+import com.agenceimmobiliere.offers_service.enums.OfferStatus;
+
+
+
 @RestController
 @RequestMapping("/api/offers")
 public class OfferController {
@@ -158,4 +162,78 @@ public class OfferController {
 
         return offerService.getOffersByAnnouncementId(announcementId);
     }
+    
+    
+    
+    
+    
+ // Accept an offer
+    @PutMapping("/{id}/accept")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    public ResponseEntity<OfferResponse> acceptOffer(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return changeOfferStatus(id, OfferStatus.ACCEPTED, authentication);
+    }
+
+    // Reject an offer
+    @PutMapping("/{id}/reject")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    public ResponseEntity<OfferResponse> rejectOffer(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return changeOfferStatus(id, OfferStatus.REJECTED, authentication);
+    }
+
+    // Shared logic for accepting and rejecting
+    private ResponseEntity<OfferResponse> changeOfferStatus(
+            Long id,
+            OfferStatus status,
+            Authentication authentication) {
+
+        var existingOffer = offerService.getOfferById(id);
+
+        if (existingOffer.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Long userId = (Long) authentication.getPrincipal();
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            AnnouncementResponse announcement =
+                    announcementClient.getAnnouncement(
+                            existingOffer.get().getAnnouncementId());
+
+            if (!userId.equals(announcement.getAgentId())) {
+                throw new AccessDeniedException(
+                        "You cannot manage offers for another agent's announcement.");
+            }
+        }
+
+        return offerService.updateOfferStatus(id, status)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }

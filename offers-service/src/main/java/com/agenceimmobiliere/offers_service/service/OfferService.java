@@ -16,6 +16,9 @@ import com.agenceimmobiliere.offers_service.dto.OfferResponse;
 
 import org.springframework.security.access.AccessDeniedException;
 
+import com.agenceimmobiliere.offers_service.enums.OfferStatus;
+
+
 @Service
 public class OfferService {
 
@@ -147,6 +150,39 @@ public class OfferService {
                 offer.getBuyerId()
         );
     }
+    
+    
+    
+    
+ // Accept or reject an offer
+    public Optional<OfferResponse> updateOfferStatus(Long id, OfferStatus status) {
+
+        Optional<Offer> existingOffer = offerRepository.findById(id);
+
+        if (existingOffer.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Offer offer = existingOffer.get();
+
+        if (offer.getStatus() != OfferStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Only pending offers can be accepted or rejected."
+            );
+        }
+
+        offer.setStatus(status);
+
+        Offer updatedOffer = offerRepository.save(offer);
+
+        return Optional.of(toOfferResponse(updatedOffer));
+    }
+    
+    
+    
+    
+    
+    
     
     
     
