@@ -38,10 +38,25 @@ public class OfferController {
 
     // GET /api/offers/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<OfferResponse> getOfferById(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('BUYER', 'ADMIN')")
+    public ResponseEntity<OfferResponse> getOfferById(
+            @PathVariable Long id,
+            Authentication authentication) {
 
         return offerService.getOfferById(id)
-                .map(ResponseEntity::ok)
+                .map(offer -> {
+                    Long userId = (Long) authentication.getPrincipal();
+
+                    boolean isAdmin = authentication.getAuthorities().stream()
+                            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+                    if (!isAdmin && !offer.getBuyerId().equals(userId)) {
+                        throw new AccessDeniedException(
+                                "You cannot view another buyer's offer.");
+                    }
+
+                    return ResponseEntity.ok(offer);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
