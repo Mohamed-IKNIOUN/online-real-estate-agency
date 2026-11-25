@@ -1,66 +1,56 @@
 import {useEffect,useState} from 'react'
-import type {Property} from './api'
+import {ApiError,request,type Property} from './api'
 
-export const imageNotice='Images enregistrées localement dans ce navigateur uniquement. Elles ne sont pas stockées sur le serveur.'
+// Photos are stored by announcements-service and visible to every visitor.
+export const imageNotice='Les photos sont enregistrées sur le serveur et visibles par tous les visiteurs.'
 export const maxImages=5
 export const maxImageBytes=5*1024*1024
 export const imageTypes='image/jpeg,image/png,image/webp'
-const testEnvironment=String(import.meta.env.VITE_LOCAL_IMAGE_ENV??'').trim()
-export const imagesConfigured=import.meta.env.DEV&&/^[A-Za-z0-9_-]{8,128}$/.test(testEnvironment)
-const storeName='galleries'
-const changed='maison-adresse:gallery'
-let connection:Promise<IDBDatabase>|undefined
+export const imagesConfigured=true
+
+// A photo already on the server, or a new file picked in the editor and not yet uploaded.
+export type ServerPhoto={id:number;url:string}
+export type Photo=ServerPhoto|Blob
+export const isServerPhoto=(photo:Photo):photo is ServerPhoto=>!(photo instanceof Blob)
 
 type PropertyIdentity=Pick<Property,'id'|'agentId'>
-const keyFor=({id,agentId}:PropertyIdentity)=>JSON.stringify([testEnvironment,id,agentId])
+type ImageResponse={id:number;url:string;contentType:string;position:number}
+const changed='aqar:gallery'
+const base='/backend/announcements'
+const toPhotos=(items:ImageResponse[]):ServerPhoto[]=>[...items].sort((a,b)=>a.position-b.position).map(item=>({id:item.id,url:base+item.url}))
+const path=(id:number)=>'/api/announcements/'+id+'/images'
 
-function database(){
-  if(!connection){
-    connection=new Promise<IDBDatabase>((resolve,reject)=>{
-      const request=indexedDB.open('maison-adresse-images',1)
-      request.onupgradeneeded=()=>request.result.createObjectStore(storeName)
-      request.onerror=()=>reject(request.error)
-      request.onblocked=()=>reject(new Error('Base d’images bloquée par un autre onglet.'))
-      request.onsuccess=()=>{
-        const db=request.result
-        db.onversionchange=()=>{db.close();connection=undefined}
-        resolve(db)
-      }
-    }).catch(error=>{connection=undefined;throw error})
-  }
-  return connection
-}
-async function transact<T>(mode:IDBTransactionMode,operation:(store:IDBObjectStore)=>IDBRequest<T>):Promise<T>{
-  const db=await database()
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(storeName,mode)
-    const request=operation(tx.objectStore(storeName))
-    tx.oncomplete=()=>resolve(request.result)
-    tx.onabort=()=>reject(request.error??tx.error??new Error('Transaction interrompue.'))
-  })
+export async function loadImages(property:PropertyIdentity):Promise<ServerPhoto[]>{
+  if(!Number.isSafeInteger(property.id)||property.id<1)return []
+  return toPhotos(await request<ImageResponse[]>('announcements',path(property.id)))
 }
 
-export async function loadImages(property:PropertyIdentity):Promise<Blob[]>{
-  if(!imagesConfigured)return []
-  return (await transact('readonly',store=>store.get(keyFor(property))))??[]
-}
-export async function saveImages(property:PropertyIdentity,photos:Blob[]){
-  if(!imagesConfigured)throw new Error('Identifiant d’environnement d’images manquant.')
-  if(photos.length>maxImages||photos.some(blob=>blob.size>maxImageBytes||!imageTypes.split(',').includes(blob.type))){
-    throw new Error('Sélection d’images invalide.')
+// Replaces the whole gallery in display order (first photo = cover).
+export async function saveImages(property:PropertyIdentity,photos:Photo[],token:string):Promise<ServerPhoto[]>{
+  if(photos.length>maxImages)throw new Error('Vous pouvez enregistrer au maximum cinq images par annonce.')
+  const form=new FormData()
+  const layout:string[]=[]
+  let index=0
+  for(const photo of photos){
+    if(isServerPhoto(photo)){layout.push('e:'+photo.id);continue}
+    if(photo.size>maxImageBytes||!imageTypes.split(',').includes(photo.type))throw new Error('Sélection d’images invalide.')
+    form.append('files',photo,'photo-'+index+'.'+photo.type.split('/')[1])
+    layout.push('f:'+index++)
   }
-  const key=keyFor(property)
-  if(photos.length)await transact('readwrite',store=>store.put(photos,key))
-  else await transact('readwrite',store=>store.delete(key))
-  window.dispatchEvent(new CustomEvent(changed,{detail:key}))
+  form.append('layout',layout.join(','))
+  const saved=toPhotos(await request<ImageResponse[]>('announcements',path(property.id),'PUT',form,token,60000))
+  window.dispatchEvent(new CustomEvent(changed,{detail:property.id}))
+  return saved
 }
-export const removeImages=(property:PropertyIdentity)=>imagesConfigured?saveImages(property,[]):Promise.resolve()
+
+// The server deletes the photos together with the listing.
+export const removeImages=(_property:PropertyIdentity)=>Promise.resolve()
 
 export function imageError(error:unknown){
-  return error instanceof DOMException&&error.name==='QuotaExceededError'
-    ?'Espace de stockage insuffisant. Libérez de la place ou retirez des photos, puis réessayez.'
-    :'Le stockage local des images est indisponible. Vérifiez les autorisations du navigateur ou fermez les autres onglets, puis réessayez.'
+  if(error instanceof ApiError||error instanceof Error)return error.message
+  return 'Les photos n’ont pas pu être enregistrées. Réessayez.'
 }
+
 export async function verifyImage(file:File){
   if(!imageTypes.split(',').includes(file.type))throw new Error('Formats acceptés : JPG, PNG et WebP.')
   if(file.size===0||file.size>maxImageBytes)throw new Error('Chaque image doit être non vide et ne pas dépasser 5 Mo.')
@@ -81,31 +71,33 @@ export async function verifyImage(file:File){
     throw new Error('Impossible de décoder cette image. Sélectionnez un fichier JPG, PNG ou WebP valide.')
   }
 }
+
 export function useImages(property:PropertyIdentity){
   const {id,agentId}=property
-  const key=keyFor(property)
+  const key=String(id)
   const [revision,reload]=useState(0)
-  const [state,setState]=useState<{key:string;photos:Blob[];loading:boolean;error?:string}>({key,photos:[],loading:imagesConfigured})
+  const [state,setState]=useState<{key:string;photos:ServerPhoto[];loading:boolean;error?:string}>({key,photos:[],loading:true})
   useEffect(()=>{
-    const update=(event:Event)=>{if((event as CustomEvent<string>).detail===key)reload(value=>value+1)}
+    const update=(event:Event)=>{if((event as CustomEvent<number>).detail===id)reload(value=>value+1)}
     window.addEventListener(changed,update)
     return()=>window.removeEventListener(changed,update)
-  },[key])
+  },[id])
   useEffect(()=>{
     let current=true
-    if(!imagesConfigured)return
     setState(previous=>({key,photos:previous.key===key?previous.photos:[],loading:true}))
-    void loadImages({id,agentId}).then(photos=>{
+    loadImages({id,agentId}).then(photos=>{
       if(current)setState({key,photos,loading:false})
     }).catch(error=>{
-      if(current)setState({key,photos:[],loading:false,error:imageError(error)})
+      if(current)setState({key,photos:[],loading:false,error:'Photos indisponibles. '+imageError(error)})
     })
     return()=>{current=false}
   },[id,agentId,key,revision])
-  return state.key===key?state:{photos:[],loading:imagesConfigured,error:undefined}
+  return state.key===key?state:{photos:[] as ServerPhoto[],loading:true,error:undefined}
 }
 
-export function useImageUrl(blob?:Blob){
+// Server photos already have a URL; new files get a temporary object URL for the preview.
+export function useImageUrl(photo?:Photo){
+  const blob=photo&&!isServerPhoto(photo)?photo:undefined
   const [state,setState]=useState<{blob:Blob;url:string}|null>(null)
   useEffect(()=>{
     if(!blob){setState(null);return}
@@ -113,5 +105,6 @@ export function useImageUrl(blob?:Blob){
     setState({blob,url})
     return()=>URL.revokeObjectURL(url)
   },[blob])
+  if(photo&&isServerPhoto(photo))return photo.url
   return state?.blob===blob?state?.url:undefined
 }

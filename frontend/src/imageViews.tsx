@@ -1,9 +1,9 @@
 import {useState,type ChangeEvent} from 'react'
 import {Building2,ImagePlus,Star,X} from 'lucide-react'
 import type {Property} from './api'
-import {imageNotice,imageTypes,imagesConfigured,maxImages,useImages,useImageUrl,verifyImage} from './propertyImages'
+import {imageNotice,imageTypes,maxImages,useImages,useImageUrl,verifyImage,type Photo} from './propertyImages'
 
-export function LocalImage({blob,alt,className}:{blob?:Blob;alt:string;className?:string}){
+export function LocalImage({blob,alt,className}:{blob?:Photo;alt:string;className?:string}){
   const url=useImageUrl(blob)
   const [failed,setFailed]=useState<string>()
   return url&&failed!==url
@@ -27,9 +27,9 @@ export function PropertyGallery({property}:{property:Property}){
   </section>
 }
 
-export function ImageEditor({photos,onChange,disabled,pending,onPending}:{photos:Blob[];onChange:(photos:Blob[])=>void;disabled:boolean;pending:boolean;onPending:(pending:boolean)=>void}){
+export function ImageEditor({photos,onChange,disabled,pending,onPending}:{photos:Photo[];onChange:(photos:Photo[])=>void;disabled:boolean;pending:boolean;onPending:(pending:boolean)=>void}){
   const [issue,setIssue]=useState('')
-  const locked=disabled||pending||!imagesConfigured
+  const locked=disabled||pending
   async function choose(event:ChangeEvent<HTMLInputElement>,index?:number){
     const files=Array.from(event.currentTarget.files??[])
     event.currentTarget.value=''
@@ -50,8 +50,7 @@ export function ImageEditor({photos,onChange,disabled,pending,onPending}:{photos
   return <fieldset className="image-editor stack" disabled={locked}>
     <legend>Photos du bien</legend>
     <p className="muted local-image-notice">{imageNotice}</p>
-    {!imagesConfigured&&<p className="feedback error">Définissez VITE_LOCAL_IMAGE_ENV pour activer le stockage local des images.</p>}
-    {photos.length>0&&<div className="image-editor-grid">{photos.map((photo,index)=><div className="image-editor-item" key={index}>
+    {photos.length>0&&<div className="image-editor-grid">{photos.map((photo,index)=><div className="image-editor-item" key={photo instanceof Blob?'new-'+index:'id-'+photo.id}>
       <div className="image-editor-preview"><LocalImage blob={photo} alt={'Aperçu de la photo '+(index+1)}/></div>
       <div className="image-editor-actions">
         {index===0?<span className="badge"><Star size={13} aria-hidden="true"/> Couverture</span>:<button className="button outline" type="button" onClick={()=>onChange([photo,...photos.filter((_,pos)=>pos!==index)])}>Définir comme couverture</button>}

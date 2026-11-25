@@ -12,3 +12,5 @@ target
 
 # Environment variables
 .env
+# Listing photos stored by announcements-service when run outside Docker
+announcements-service/data/

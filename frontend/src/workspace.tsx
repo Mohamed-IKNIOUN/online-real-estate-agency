@@ -1,6 +1,6 @@
 import {favouritesEnabled,visitsEnabled,offerDecisionsEnabled} from './features'
 import {ImageEditor} from './imageViews'
-import {imageError,removeImages,saveImages,useImages} from './propertyImages'
+import {imageError,saveImages,useImages,type Photo} from './propertyImages'
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react'
 import {Link,NavLink,Outlet,useSearchParams} from 'react-router-dom'
 import {Building2,CalendarDays,Check,ClipboardList,Heart,LayoutDashboard,Pencil,Plus,Trash2,UserRound,X} from 'lucide-react'
@@ -82,12 +82,7 @@ export function Properties({role}:{role:Role}){
       await api.deleteProperty(property.id,token)
       setRemove(null)
       list.reload()
-      try {
-        await removeImages(property)
-        setMessage({notice:'Annonce supprimée.'})
-      }catch(error){
-        setMessage({error:'Annonce supprimée sur le serveur. Les photos locales n’ont pas pu être effacées. '+imageError(error)})
-      }
+      setMessage({notice:'Annonce supprimée.'})
     }catch(error){setDeleteError(failure(error))}
     finally{setBusy(false)}
   }
@@ -99,7 +94,7 @@ export function Properties({role}:{role:Role}){
 }
 function ListingEditor({item,token,busy,setBusy,reload,done}:{item?:Property;token:string;busy:boolean;setBusy:(busy:boolean)=>void;reload:()=>void;done:(result:string)=>void}){
   const existing=useImages(item??{id:0,agentId:null})
-  const [draft,setDraft]=useState<Blob[]|null>(null)
+  const [draft,setDraft]=useState<Photo[]|null>(null)
   const [pending,setPending]=useState(false)
   const [issue,setIssue]=useState('')
   const [saved,setSaved]=useState<Property>()
@@ -115,13 +110,13 @@ function ListingEditor({item,token,busy,setBusy,reload,done}:{item?:Property;tok
       if(draft!==null){
         try {
           if(!Number.isSafeInteger(property.id)||property.id<1)throw new Error('Identifiant d’annonce absent.')
-          await saveImages(property,draft)
+          setDraft(await saveImages(property,draft,token))
         }catch(error){
-          setIssue('Annonce enregistrée sur le serveur. Les photos locales n’ont pas été enregistrées. Vous pouvez réessayer avant de fermer. '+imageError(error))
+          setIssue('Annonce enregistrée. Les photos n’ont pas été enregistrées. Vous pouvez réessayer avant de fermer. '+imageError(error))
           return
         }
       }
-      done(draft===null?'Annonce enregistrée.':'Annonce enregistrée. Galerie locale mise à jour.')
+      done(draft===null?'Annonce enregistrée.':'Annonce et photos enregistrées.')
     }catch(error){setIssue(failure(error))}
     finally{setBusy(false)}
   }
@@ -159,7 +154,7 @@ export function Visits({role}:{role:Role}){
     if(!property)return
     void action.run(()=>api.book({announcementId:property.id,clientId:session!.user.id,agentId:property.agentId??undefined,date:value(data,'date'),heure:value(data,'heure')},token),'Visite demandée.',()=>{form.reset();list.reload()})
   }}><PropertySelect items={items} selected={params.get('bien')??''}/><label>Date<input name="date" type="date" required/></label><label>Heure<input name="heure" type="time" required/></label><button className="button primary" disabled={action.busy}>Demander la visite</button></form>:<Empty copy="Une annonce publiée est nécessaire pour réserver."/ >}</Query></section>}
-  <Query state={list}>{items=>items.length?table(['Bien','Client','Date et heure','Statut','Actions'],items.map(visit=>[<Link to={'/biens/'+visit.announcementId}>#{visit.announcementId}</Link>,visit.clientId,visit.date+' · '+visit.heure,<StatusBadge status={visit.status}>{visitStatus[visit.status]??visit.status}</StatusBadge>,<div className="inline">{visit.status==='DEMANDEE'&&role!=='BUYER'&&<><button className="button success" disabled={action.busy} onClick={()=>change(visit,'CONFIRMEE')}><Check size={16} aria-hidden="true"/> Confirmer</button><button className="button outline" disabled={action.busy} onClick={()=>change(visit,'REFUSEE')}>Refuser</button></>}{['DEMANDEE','CONFIRMEE'].includes(visit.status)&&<button className="button danger" disabled={action.busy} onClick={()=>change(visit,'ANNULEE')}>Annuler</button>}</div>])):<Empty copy="Aucune visite enregistrée."/>}</Query>
+  <Query state={list}>{items=>items.length?table(['Bien','Client','Date et heure','Statut','Actions'],items.map(visit=>[<Link to={'/biens/'+visit.announcementId}>#{visit.announcementId}</Link>,visit.clientId,visit.date+' · '+visit.heure,<StatusBadge status={visit.status}>{visitStatus[visit.status]??visit.status}</StatusBadge>,<div className="inline">{['DEMANDEE','CONFIRMEE'].includes(visit.status)?<>{role!=='BUYER'&&<button className="button success" disabled={action.busy||visit.status==='CONFIRMEE'} title={visit.status==='CONFIRMEE'?'Visite déjà confirmée':undefined} onClick={()=>change(visit,'CONFIRMEE')}><Check size={16} aria-hidden="true"/> Confirmer</button>}<button className="button danger" disabled={action.busy} onClick={()=>change(visit,'ANNULEE')}><X size={16} aria-hidden="true"/> Annuler</button></>:<span className="muted">—</span>}</div>])):<Empty copy="Aucune visite enregistrée."/>}</Query>
   </>
 }
 async function agentOffers(token:string,id:string){
