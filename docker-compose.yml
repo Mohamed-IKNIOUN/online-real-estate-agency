@@ -17,12 +17,28 @@ services:
       timeout: 5s
       retries: 5
 
+  identity-service:
+    build: ./identity-service
+    container_name: identity-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
+      SPRING_DATASOURCE_USERNAME: agence_admin
+      SPRING_DATASOURCE_PASSWORD: agence_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   announcements-service:
     build: ./announcements-service
     container_name: announcements-service
     ports:
       - "8081:8081"
+    volumes:
+      - announcement_images:/data/announcement-images
     environment:
+      ANNOUNCEMENT_IMAGES_DIR: /data/announcement-images
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
       SPRING_DATASOURCE_USERNAME: agence_admin
       SPRING_DATASOURCE_PASSWORD: agence_password
@@ -36,6 +52,7 @@ services:
     ports:
       - "8082:8082"
     environment:
+      ANNOUNCEMENTS_SERVICE_URL: http://announcements-service:8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
       SPRING_DATASOURCE_USERNAME: agence_admin
       SPRING_DATASOURCE_PASSWORD: agence_password
@@ -49,6 +66,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      ANNOUNCEMENTS_SERVICE_URL: http://announcements-service:8081/api/announcements
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agence_immobiliere
       SPRING_DATASOURCE_USERNAME: agence_admin
       SPRING_DATASOURCE_PASSWORD: agence_password
@@ -69,5 +87,23 @@ services:
       postgres:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_FAVOURITES_ENABLED: "true"
+        VITE_VISITS_ENABLED: "true"
+        VITE_OFFER_DECISIONS_ENABLED: "true"
+    container_name: aqar-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - identity-service
+      - announcements-service
+      - offers-service
+      - favourites-service
+      - visits-service
+
 volumes:
   postgres_data:
+  announcement_images:

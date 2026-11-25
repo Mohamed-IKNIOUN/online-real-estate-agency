@@ -19,16 +19,16 @@ const http=axios.create({timeout:9000})
 export class ApiError extends Error {
   constructor(public status:number, public service:Service, message:string) {super(message)}
 }
-const messages:Record<number,string>={400:'Vérifiez les champs saisis.',401:'Connexion requise ou identifiants invalides.',403:'Votre compte ne dispose pas de cet accès.',404:'La ressource demandée est introuvable.',409:'Cette opération entre en conflit avec les données existantes.',422:'Les données envoyées ne peuvent pas être traitées.',500:'Le service a rencontré une erreur interne.',503:'Le service est temporairement indisponible. Réessayez plus tard.'}
-export async function request<T>(service:Service,path:string,method='GET',data?:unknown,token?:string):Promise<T>{
+const messages:Record<number,string>={413:'Fichier trop volumineux.',400:'Vérifiez les champs saisis.',401:'Connexion requise ou identifiants invalides.',403:'Votre compte ne dispose pas de cet accès.',404:'La ressource demandée est introuvable.',409:'Cette opération entre en conflit avec les données existantes.',422:'Les données envoyées ne peuvent pas être traitées.',500:'Le service a rencontré une erreur interne.',503:'Le service est temporairement indisponible. Réessayez plus tard.'}
+export async function request<T>(service:Service,path:string,method='GET',data?:unknown,token?:string,timeout?:number):Promise<T>{
   try {
-    const response=await http.request<T>({url:'/backend/'+service+path,method,data,headers:token?{Authorization:'Bearer '+token}:undefined})
+    const response=await http.request<T>({url:'/backend/'+service+path,method,data,timeout,headers:token?{Authorization:'Bearer '+token}:undefined})
     return response.data
   } catch (err) {
     if (!axios.isAxiosError(err)) throw err
     const status=err.response?.status ?? 0
     const payload:unknown=err.response?.data
-    const detail=typeof payload==='object' && payload!==null && 'message' in payload && typeof payload.message==='string' && payload.message.length<240 && [400,409,422].includes(status) ? ' '+payload.message : ''
+    const detail=typeof payload==='object' && payload!==null && 'message' in payload && typeof payload.message==='string' && payload.message.length<240 && [400,409,413,422].includes(status) ? ' '+payload.message : ''
     throw new ApiError(status,service,!status || [502,504].includes(status) || (status===500 && !payload) ? 'Service '+service+' indisponible. Vérifiez son URL et son démarrage.' : (messages[status] ?? 'Requête refusée ('+status+').')+detail)
   }
 }

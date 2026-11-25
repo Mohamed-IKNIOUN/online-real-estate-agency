@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.agenceimmobiliere.announcements_service.entity.Announcement;
+import com.agenceimmobiliere.announcements_service.service.AnnouncementImageService;
 import com.agenceimmobiliere.announcements_service.service.AnnouncementService;
 
 import java.util.Objects;
@@ -29,10 +30,13 @@ import org.springframework.security.core.Authentication;
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
+    private final AnnouncementImageService imageService;
 
     public AnnouncementController(
-            AnnouncementService announcementService) {
+            AnnouncementService announcementService,
+            AnnouncementImageService imageService) {
         this.announcementService = announcementService;
+        this.imageService = imageService;
     }
 
     @GetMapping
@@ -122,6 +126,7 @@ public class AnnouncementController {
 	        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 	    }
 
+	    imageService.deleteAll(id);
 	    announcementService.deleteAnnouncement(id);
 
 	    return ResponseEntity.noContent().build();

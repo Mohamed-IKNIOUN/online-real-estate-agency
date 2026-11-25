@@ -49,8 +49,12 @@ Les variables publiques `VITE_*_ENABLED` se définissent à la compilation via l
 
 En développement, seul le JWT d’accès est conservé dans `sessionStorage` pour restaurer F5. Il reste lisible en cas de XSS. Le jeton de renouvellement reste en mémoire et n’est pas persisté. La restauration recharge le profil réel et efface le jeton en cas d’expiration ou de refus. La déconnexion révoque le jeton de renouvellement lorsqu’il est encore disponible en mémoire. Le JWT d’accès reste valide côté serveur jusqu’à son expiration normale.
 
-## Photos locales
+## Photos des annonces
 
-Images enregistrées localement dans ce navigateur uniquement. Elles ne sont pas stockées sur le serveur.
+Les photos sont stockées par `announcements-service` et visibles par tous les visiteurs.
 
-En développement, renseigner un nouvel identifiant `VITE_LOCAL_IMAGE_ENV` pour chaque nouvelle base d’annonces jetable. La galerie associe cet espace, l’identifiant d’annonce et l’identifiant agent. Elle accepte jusqu’à cinq fichiers JPG, PNG ou WebP, chacun de 5 Mo maximum, et les enregistre sous forme de Blob après validation de l’annonce par l’API. En cas de quota dépassé, la galerie affiche une erreur et permet de réessayer. Pour supprimer les images locales de tous les environnements, supprimer la base IndexedDB `maison-adresse-images` dans les outils de développement du navigateur. L’illustration d’accueil est une photographie Unsplash.
+- `GET /api/announcements/{id}/images` (public) : liste ordonnée, la première photo sert de couverture.
+- `GET /api/announcements/{id}/images/{imageId}` (public) : le fichier image.
+- `PUT /api/announcements/{id}/images` (agent propriétaire ou admin, multipart) : remplace la galerie. Champ `layout` dans l’ordre d’affichage (`e:<id>` conserve une photo existante, `f:<index>` utilise `files[index]`) et champ `files` pour les nouveaux fichiers.
+
+Limites : cinq photos par annonce, 5 Mo par photo, formats JPG, PNG ou WebP vérifiés sur le contenu du fichier. Les photos sont supprimées avec l’annonce. Avec Docker Compose, elles sont conservées dans le volume `announcement_images`. L’illustration d’accueil est une photographie Unsplash.
